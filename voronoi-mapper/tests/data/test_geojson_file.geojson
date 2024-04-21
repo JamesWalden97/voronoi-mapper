@@ -1,0 +1,19 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Severn Bridge parkrun"
+            },
+            "geometry": {
+                "coordinates": [
+                    -2.6,
+                    51.6
+                ],
+                "type": "Point"
+            },
+            "id": 0
+        }
+    ]
+}
