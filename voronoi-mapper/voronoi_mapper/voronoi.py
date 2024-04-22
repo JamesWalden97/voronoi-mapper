@@ -4,9 +4,8 @@ from typing import Generator
 
 import geopandas as gpd
 import numpy as np
-import shapely as shp
 from scipy.spatial import Voronoi
-from shapely.geometry import LineString, MultiPolygon, Polygon
+from shapely.geometry import LineString, Polygon
 from shapely.ops import polygonize
 from voronoi_mapper.geojson import (
     load_mask_geojson,
@@ -121,12 +120,6 @@ def create_geodataframe_from_polygons_and_features(
     gdf = gpd.GeoDataFrame(polygon_point_pairs)
     gdf = gdf.set_geometry("geometry")
     return gdf
-
-
-def clip_polygons_to_mask(
-    gdf: gpd.GeoDataFrame, mask: MultiPolygon
-) -> gpd.GeoDataFrame:
-    return gdf.clip(mask=mask)
 
 
 if __name__ == "__main__":

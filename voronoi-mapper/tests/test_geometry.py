@@ -1,10 +1,14 @@
+from pdb import set_trace
+
+import geopandas as gpd
 import pytest
+from shapely.geometry import MultiPolygon, Polygon
 from voronoi_mapper.geometry import (
+    calculate_gradient,
     check_point_is_within,
+    clip_polygons_to_mask,
     get_bounding_segments,
     get_intersection_with_bounding_box,
-    gradient,
-    match_point_features_to_polygons,
 )
 from voronoi_mapper.models import (
     BoundingBox,
@@ -22,7 +26,7 @@ from voronoi_mapper.models import (
     ],
 )
 def test_gradient(point_a, point_b, expected_output):
-    m_grad = gradient(point_a=point_a, point_b=point_b)
+    m_grad = calculate_gradient(point_a=point_a, point_b=point_b)
     assert round(m_grad, 2) == expected_output
 
 
@@ -31,7 +35,7 @@ def test_gradient(point_a, point_b, expected_output):
     [([1, 1], [2, 1], 0), ([1, 1], [1, 2], None)],
 )
 def test_gradient_h_v(point_a, point_b, expected_output):
-    assert expected_output == gradient(point_a=point_a, point_b=point_b)
+    assert expected_output == calculate_gradient(point_a=point_a, point_b=point_b)
 
 
 @pytest.mark.parametrize(
@@ -121,7 +125,7 @@ def test_get_intersection_with_bounding_box_exception(
         get_intersection_with_bounding_box(
             coordinates=coordinates, bounding_box=bounding_box
         )
-        assert "No intersections" in exc_info
+        assert "No intersections" in str(exc_info.value)
 
 
 def test_get_bounding_segments(mock_bounding_box, mock_bounding_box_intersections):
@@ -142,3 +146,45 @@ def test_get_bounding_segments(mock_bounding_box, mock_bounding_box_intersection
     ]
 
     assert all(segment in expected_bounding_segments for segment in bounding_segments)
+
+
+def test_clip_polygons_within_mask(mock_geo_dataframe, mock_mask):
+    clipped = clip_polygons_to_mask(mock_geo_dataframe, mock_mask)
+    assert len(clipped) == 1
+    assert clipped.geometry.iloc[0].equals(Polygon([(1, 1), (2, 1), (2, 2), (1, 2)]))
+
+
+@pytest.mark.parametrize(
+    "geo_dataframe,mask",
+    [
+        (
+            gpd.GeoDataFrame(
+                {
+                    "geometry": [
+                        Polygon([(0, 0), (2, 0), (2, 2), (0, 2)]),
+                        Polygon([(4, 3), (5, 3), (5, 5), (3, 5)]),
+                    ]
+                }
+            ),
+            MultiPolygon([Polygon([(10, 10), (12, 10), (12, 12), (10, 12)])]),
+        ),
+        (
+            gpd.GeoDataFrame(
+                {
+                    "geometry": [
+                        Polygon([(0, 0), (2, 0), (2, 2), (0, 2)]),
+                        Polygon([(4, 3), (5, 3), (5, 5), (3, 5)]),
+                    ]
+                }
+            ),
+            MultiPolygon(),
+        ),
+        (
+            gpd.GeoDataFrame(columns=["geometry"], geometry="geometry"),
+            MultiPolygon([Polygon([(10, 10), (12, 10), (12, 12), (10, 12)])]),
+        ),
+    ],
+)
+def test_clip_polygons_outside_mask(geo_dataframe, mask):
+    clipped = clip_polygons_to_mask(geo_dataframe, mask)
+    assert clipped.empty

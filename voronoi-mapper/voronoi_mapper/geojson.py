@@ -1,5 +1,9 @@
 import json
 
+from shapely import get_coordinates
+from shapely.geometry import shape
+from shapely.ops import unary_union
+
 
 def _load_geojson_file(geojson_path: str):
     # TODO: extend to yaml
@@ -15,7 +19,7 @@ def load_points_and_features_from_geojson(
 
     features = geojson_obj["features"]
     geom = [shape(i["geometry"]) for i in features]
-    points = [shp.get_coordinates(x).tolist() for x in geom]
+    points = [get_coordinates(x).tolist() for x in geom]
     points = [item[0] for item in points]
 
     return points, features
