@@ -9,6 +9,7 @@ from voronoi_mapper.geometry import (
     clip_polygons_to_mask,
     get_bounding_segments,
     get_intersection_with_bounding_box,
+    handle_straight_lines,
 )
 from voronoi_mapper.models import (
     BoundingBox,
@@ -125,7 +126,7 @@ def test_get_intersection_with_bounding_box_exception(
         get_intersection_with_bounding_box(
             coordinates=coordinates, bounding_box=bounding_box
         )
-        assert "No intersections" in str(exc_info.value)
+    assert "No intersections found" in str(exc_info.value)
 
 
 def test_get_bounding_segments(mock_bounding_box, mock_bounding_box_intersections):
@@ -188,3 +189,47 @@ def test_clip_polygons_within_mask(mock_geo_dataframe, mock_mask):
 def test_clip_polygons_outside_mask(geo_dataframe, mask):
     clipped = clip_polygons_to_mask(geo_dataframe, mask)
     assert clipped.empty
+
+
+@pytest.mark.parametrize(
+    "point_a,point_b,gradient,bounding_box,expected_intersection",
+    [
+        (
+            [1, 2],
+            [3, 2],
+            0,
+            BoundingBox(xmin=0, xmax=4, ymin=0, ymax=4),
+            Intersection(coordinates=(4, 2), edge=Edges.right),
+        ),
+        (
+            [1, 1],
+            [1, 3],
+            None,
+            BoundingBox(xmin=0, xmax=4, ymin=0, ymax=4),
+            Intersection(coordinates=(1, 4), edge=Edges.top),
+        ),
+        (
+            [3, 2],
+            [1, 2],
+            0,
+            BoundingBox(xmin=0, xmax=4, ymin=0, ymax=4),
+            Intersection(coordinates=(0, 2), edge=Edges.left),
+        ),
+        (
+            [1, 3],
+            [1, 1],
+            None,
+            BoundingBox(xmin=0, xmax=4, ymin=0, ymax=4),
+            Intersection(coordinates=(1, 0), edge=Edges.bottom),
+        ),
+    ],
+)
+def test_handle_straight_lines(
+    point_a, point_b, gradient, bounding_box, expected_intersection
+):
+    actual_intersection = handle_straight_lines(
+        point_a, point_b, gradient, bounding_box
+    )
+
+    assert actual_intersection.coordinates == expected_intersection.coordinates
+    assert actual_intersection.edge == expected_intersection.edge

@@ -1,9 +1,13 @@
 from pdb import set_trace
 
+import geopandas as gpd
+import pytest
 from shapely import unary_union
-from shapely.geometry import Polygon, shape
+from shapely.geometry import Polygon
+from shapely.ops import shape
 from voronoi_mapper.models import Edges
 from voronoi_mapper.voronoi import (
+    create_geodataframe_from_polygons_and_features,
     get_line_segments_from_voronoi,
     get_polygons_from_voronoi,
     match_point_features_to_polygons,
@@ -83,3 +87,59 @@ def test_multiple_points():
     assert len(result) == 2
     assert result[0][0].equals(polygons[0])
     assert result[1][0].equals(polygons[1])
+
+
+@pytest.mark.parametrize(
+    "polygons,features,expected_geodataframe",
+    [
+        (
+            [
+                Polygon(
+                    [
+                        (-0.5, 1.5),
+                        (2.5, 1.5),
+                        (10.0, -2.25),
+                        (10.0, -9.0),
+                        (-0.5, 1.5),
+                    ]
+                )
+            ],
+            [
+                {
+                    "type": "Feature",
+                    "properties": {"id": 0},
+                    "geometry": {"type": "Point", "coordinates": [0, 0]},
+                }
+            ],
+            gpd.GeoDataFrame(
+                {
+                    "geometry": [
+                        shape(
+                            {
+                                "type": "Polygon",
+                                "coordinates": [
+                                    [
+                                        [-0.5, 1.5],
+                                        [2.5, 1.5],
+                                        [10.0, -2.25],
+                                        [10.0, -9.0],
+                                        [-0.5, 1.5],
+                                    ]
+                                ],
+                            }
+                        )
+                    ],
+                    "id": 0,
+                }
+            ),
+        )
+    ],
+)
+def test_create_geodataframe_from_polygons_and_features(
+    polygons, features, expected_geodataframe
+):
+    gdf = create_geodataframe_from_polygons_and_features(
+        polygons=polygons, features=features
+    )
+
+    assert gdf.equals(expected_geodataframe)

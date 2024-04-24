@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from shapely import get_coordinates
 from shapely.geometry import shape
@@ -13,7 +14,7 @@ def _load_geojson_file(geojson_path: str):
 
 
 def load_points_and_features_from_geojson(
-    geojson_path: str,
+    geojson_path: str | Path,
 ) -> tuple[list[list[float]], list[dict[str, str]]]:
     geojson_obj = _load_geojson_file(geojson_path=geojson_path)
 
@@ -25,7 +26,7 @@ def load_points_and_features_from_geojson(
     return points, features
 
 
-def load_mask_geojson(geojson_path: str):
+def load_mask_geojson(geojson_path: str | Path):
     boundary_geojson_obj = _load_geojson_file(geojson_path=geojson_path)
 
     geometries = [shape(x["geometry"]) for x in boundary_geojson_obj["features"]]

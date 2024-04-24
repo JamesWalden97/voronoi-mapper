@@ -3,10 +3,10 @@ from enum import Enum
 
 
 class Edges(Enum):
-    top: str = "top"
-    right: str = "right"
-    bottom: str = "bottom"
-    left: str = "left"
+    top = "top"
+    right = "right"
+    bottom = "bottom"
+    left = "left"
 
 
 @dataclass

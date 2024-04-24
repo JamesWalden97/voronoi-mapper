@@ -1,4 +1,6 @@
 import json
+import os
+from tempfile import TemporaryDirectory
 
 import geopandas as gpd
 import numpy as np
@@ -15,14 +17,28 @@ def mock_points():
 
 
 @pytest.fixture
-def mock_points_as_features(mock_points):
+def mock_points_as_features():
     return [
         {
             "type": "Feature",
             "properties": {},
-            "geometry": {"type": "Point", "coordinates": point},
-        }
-        for point in mock_points
+            "geometry": {"type": "Point", "coordinates": [0, 0]},
+        },
+        {
+            "type": "Feature",
+            "properties": {},
+            "geometry": {"type": "Point", "coordinates": [1, 1]},
+        },
+        {
+            "type": "Feature",
+            "properties": {},
+            "geometry": {"type": "Point", "coordinates": [2, 3]},
+        },
+        {
+            "type": "Feature",
+            "properties": {},
+            "geometry": {"type": "Point", "coordinates": [1, 2]},
+        },
     ]
 
 
@@ -128,3 +144,38 @@ def mock_geo_dataframe():
 @pytest.fixture
 def mock_mask():
     return MultiPolygon([Polygon([(1, 1), (3, 1), (3, 3), (1, 3)])])
+
+
+@pytest.fixture
+def temp_directory():
+    with TemporaryDirectory() as tmp_dir:
+        yield tmp_dir
+
+
+@pytest.fixture
+def mock_geojson_data():
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
+                    "description": "",
+                    "styleUrl": "#icon-1739-0F9D58",
+                    "Location": "Bushy Park, Teddington",
+                    "Permit": "Y",
+                },
+                "geometry": {"type": "Point", "coordinates": [-0.335791, 51.410992, 0]},
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def mock_saved_geojson_file_path(temp_directory, mock_geojson_data):
+    file_path = os.path.join(temp_directory, "sample_geojson_data.geojson")
+    with open(file_path) as f:
+        f.write(json.dumps(mock_geojson_data))
+
+    return file_path

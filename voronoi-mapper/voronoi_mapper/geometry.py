@@ -1,3 +1,5 @@
+from typing import Generator, Literal
+
 import geopandas as gpd
 from shapely.geometry import MultiPolygon, Polygon, shape
 from voronoi_mapper.models import (
@@ -32,7 +34,7 @@ def check_point_is_within(
 def handle_straight_lines(
     point_a: list[float],
     point_b: list[float],
-    gradient: float | None,
+    gradient: Literal[0] | None,
     bounding_box: BoundingBox,
 ):
     if gradient == 0:
@@ -112,7 +114,7 @@ def get_intersection_with_bounding_box(
     Calculate the intersection of a line segment defined by two points with a bounding box.
 
     Parameters:
-    - coordinates (Tuple[List[float], List[float]]): A tuple containing two lists representing point A and point B.
+    - coordinates (tuple[list[float], list[float]]): A tuple containing two lists representing point A and point B.
     - bounding_box (BoundingBox): An instance of BoundingBox defining the area of interest.
 
     Returns:
@@ -181,8 +183,8 @@ def get_bounding_segments(
 
 
 def match_point_features_to_polygons(
-    polygons: list[Polygon], features: list
-) -> tuple[Polygon, dict]:
+    polygons: list[Polygon] | Generator[Polygon, None, None], features: list
+) -> list[tuple[Polygon, dict]]:
     polygon_point_pairs = []
     for feature in features:
         for polygon in polygons:

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from pdb import set_trace
 from typing import Generator
 
@@ -12,6 +13,7 @@ from voronoi_mapper.geojson import (
     load_points_and_features_from_geojson,
 )
 from voronoi_mapper.geometry import (
+    clip_polygons_to_mask,
     get_bounding_segments,
     get_intersection_with_bounding_box,
     match_point_features_to_polygons,
@@ -105,46 +107,67 @@ def get_polygons_from_voronoi(
 
 
 def create_geodataframe_from_polygons_and_features(
-    polygons: list[Polygon], features: list
+    matched_polygons_and_features: list[tuple[Polygon, dict]]
 ) -> gpd.GeoDataFrame:
-    matched_polygons_and_features = match_point_features_to_polygons(
-        polygons=polygons, features=features
-    )
-
-    polygon_point_pairs = []
-    for matched_polygon, matched_feature in matched_polygons_and_features:
-        polygon_point_pairs.append(
+    gdf = gpd.GeoDataFrame(
+        [
             {"geometry": matched_polygon, **matched_feature["properties"]}
-        )
-
-    gdf = gpd.GeoDataFrame(polygon_point_pairs)
+            for matched_polygon, matched_feature in matched_polygons_and_features
+        ]
+    )
     gdf = gdf.set_geometry("geometry")
     return gdf
 
 
-if __name__ == "__main__":
-    POINTS_GEOJSON_PATH = "./etl/data/1_raw/wales_parkrun_points.geojson"
-    BOUNDARY_GEOJSON_PATH = "./etl/data/countries/wales.geojson"
-    DATAFRAME_SAVE_PATH = "./etl/data/1_raw/wales_parkrun_polygons.geojson"
-    points, features = load_points_and_features_from_geojson(
-        geojson_path=POINTS_GEOJSON_PATH
+def get_bounding_box(voronoi: Voronoi) -> BoundingBox:
+    return BoundingBox(
+        xmin=-90,
+        xmax=90,
+        ymin=-90,
+        ymax=90,
     )
-    mask = load_mask_geojson(geojson_path=BOUNDARY_GEOJSON_PATH)
 
-    bbox = BoundingBox(
-        xmin=-25,
-        xmax=25,
-        ymin=5,
-        ymax=10,
+
+def voronoi_map(
+    features_file_path: Path | str,
+    boundary_file_path: Path | str,
+    bounding_box: BoundingBox | None = None,
+    save_path: Path | str | None = None,
+):
+    points, features = load_points_and_features_from_geojson(
+        geojson_path=features_file_path
     )
+    mask = load_mask_geojson(geojson_path=boundary_file_path)
 
     voronoi = Voronoi(points)
-    plot_voronoi(voronoi=voronoi, bounding_box=bbox)
 
-    polygons = get_polygons_from_voronoi(voronoi=voronoi, bounding_box=bbox)
+    bounding_box = (
+        get_bounding_box(voronoi=voronoi) if bounding_box is None else bounding_box
+    )
 
-    gdf = match_point_features_to_polygons(polygons=polygons, features=features)
+    polygons = get_polygons_from_voronoi(voronoi=voronoi, bounding_box=bounding_box)
+
+    matched_points = match_point_features_to_polygons(
+        polygons=polygons, features=features
+    )
+
+    gdf = create_geodataframe_from_polygons_and_features(
+        matched_polygons_and_features=matched_points
+    )
 
     gdf = clip_polygons_to_mask(gdf=gdf, mask=mask)
 
-    gdf.to_file(DATAFRAME_SAVE_PATH, driver="GeoJSON")
+    if save_path is not None:
+        gdf.to_file(save_path, driver="GeoJSON")
+
+
+if __name__ == "__main__":
+    POINTS_GEOJSON_PATH = "./_data/points.geojson"
+    BOUNDARY_GEOJSON_PATH = "./_data/wales.geojson"
+    GEOJSON_SAVE_PATH = "./_data/wales_parkrun_polygons.geojson"
+
+    voronoi_map(
+        features_file_path=POINTS_GEOJSON_PATH,
+        boundary_file_path=BOUNDARY_GEOJSON_PATH,
+        save_path=GEOJSON_SAVE_PATH,
+    )
