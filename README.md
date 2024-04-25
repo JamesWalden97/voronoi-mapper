@@ -15,7 +15,7 @@ An library to merge voronoi plots with geospatial features.
 - [PyPI](https://pypi.org/project/voronoi-mapper/)
 
 
-## Installation
+## Installation
 
 ```bash
 pip install voronoi-mapper
@@ -33,3 +33,9 @@ Generate geojson features that clip to geojson boundaries.
 <h1 align="center">
     <img alt="voronoi-mapper example" width="450px" src="docs/example_clipped_polygons.png">
 </h1>
+
+```python
+from voronoi_mapper.voronoi import voronoi_map
+
+voronoi_map()
+```
