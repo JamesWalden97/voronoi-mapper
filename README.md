@@ -25,7 +25,8 @@ pip install voronoi-mapper
 
 The `scripts/` directory contains scripts to run voronoi and plotting functions.
 
-## Examples
+
+## Examples
 
 Generate geojson features that clip to geojson boundaries.
 
