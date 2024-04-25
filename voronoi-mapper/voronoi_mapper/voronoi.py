@@ -6,7 +6,7 @@ from typing import Generator
 import geopandas as gpd
 import numpy as np
 from scipy.spatial import Voronoi
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import polygonize
 from voronoi_mapper.geojson import (
     load_mask_geojson,
@@ -119,12 +119,25 @@ def create_geodataframe_from_polygons_and_features(
     return gdf
 
 
-def get_bounding_box(voronoi: Voronoi) -> BoundingBox:
+def get_bounding_box(voronoi: Voronoi, mask: Polygon | MultiPolygon) -> BoundingBox:
+    finite_vertices = voronoi.vertices[np.all(np.isfinite(voronoi.vertices), axis=1)]
+
+    min_x, min_y = np.min(finite_vertices, axis=0)
+    max_x, max_y = np.max(finite_vertices, axis=0)
+
+    mask_min_x, mask_min_y, mask_max_x, mask_max_y = mask.bounds
+
+    min_x = min(min_x, mask_min_x)
+    min_y = min(min_y, mask_min_y)
+
+    max_x = max(max_x, mask_max_x)
+    max_y = max(max_y, mask_max_y)
+
     return BoundingBox(
-        xmin=-90,
-        xmax=90,
-        ymin=-90,
-        ymax=90,
+        xmin=min_x - 1,
+        xmax=max_x + 1,
+        ymin=-min_y - 1,
+        ymax=max_y + 1,
     )
 
 
@@ -142,7 +155,9 @@ def voronoi_map(
     voronoi = Voronoi(points)
 
     bounding_box = (
-        get_bounding_box(voronoi=voronoi) if bounding_box is None else bounding_box
+        get_bounding_box(voronoi=voronoi, mask=mask)
+        if bounding_box is None
+        else bounding_box
     )
 
     polygons = get_polygons_from_voronoi(voronoi=voronoi, bounding_box=bounding_box)
@@ -159,15 +174,3 @@ def voronoi_map(
 
     if save_path is not None:
         gdf.to_file(save_path, driver="GeoJSON")
-
-
-if __name__ == "__main__":
-    POINTS_GEOJSON_PATH = "./_data/points.geojson"
-    BOUNDARY_GEOJSON_PATH = "./_data/wales.geojson"
-    GEOJSON_SAVE_PATH = "./_data/wales_parkrun_polygons.geojson"
-
-    voronoi_map(
-        features_file_path=POINTS_GEOJSON_PATH,
-        boundary_file_path=BOUNDARY_GEOJSON_PATH,
-        save_path=GEOJSON_SAVE_PATH,
-    )

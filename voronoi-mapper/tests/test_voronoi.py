@@ -3,14 +3,16 @@ from pdb import set_trace
 import geopandas as gpd
 import pytest
 from shapely import unary_union
-from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import shape
-from voronoi_mapper.models import Edges
+from voronoi_mapper.models import BoundingBox, Edges
 from voronoi_mapper.voronoi import (
     create_geodataframe_from_polygons_and_features,
+    get_bounding_box,
     get_line_segments_from_voronoi,
     get_polygons_from_voronoi,
     match_point_features_to_polygons,
+    voronoi_map,
 )
 
 
@@ -90,26 +92,26 @@ def test_multiple_points():
 
 
 @pytest.mark.parametrize(
-    "polygons,features,expected_geodataframe",
+    "matched_polygons_and_features,expected_geodataframe",
     [
         (
             [
-                Polygon(
-                    [
-                        (-0.5, 1.5),
-                        (2.5, 1.5),
-                        (10.0, -2.25),
-                        (10.0, -9.0),
-                        (-0.5, 1.5),
-                    ]
+                (
+                    Polygon(
+                        [
+                            (-0.5, 1.5),
+                            (2.5, 1.5),
+                            (10.0, -2.25),
+                            (10.0, -9.0),
+                            (-0.5, 1.5),
+                        ]
+                    ),
+                    {
+                        "type": "Feature",
+                        "properties": {"id": 0},
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    },
                 )
-            ],
-            [
-                {
-                    "type": "Feature",
-                    "properties": {"id": 0},
-                    "geometry": {"type": "Point", "coordinates": [0, 0]},
-                }
             ],
             gpd.GeoDataFrame(
                 {
@@ -136,10 +138,29 @@ def test_multiple_points():
     ],
 )
 def test_create_geodataframe_from_polygons_and_features(
-    polygons, features, expected_geodataframe
+    matched_polygons_and_features, expected_geodataframe
 ):
     gdf = create_geodataframe_from_polygons_and_features(
-        polygons=polygons, features=features
+        matched_polygons_and_features=matched_polygons_and_features
     )
 
     assert gdf.equals(expected_geodataframe)
+
+
+@pytest.mark.parametrize(
+    "mask,expected_bounding_box",
+    [
+        (
+            Polygon([(1, 1), (3, 1), (3, 3), (1, 3)]),
+            BoundingBox(xmin=-1.5, xmax=4.0, ymin=-2.0, ymax=4.0),
+        ),
+        (
+            MultiPolygon([Polygon([(1, 1), (3, 1), (3, 3), (1, 3)])]),
+            BoundingBox(xmin=-1.5, xmax=4.0, ymin=-2.0, ymax=4.0),
+        ),
+    ],
+)
+def test_get_bounding_box(mock_voronoi, mask, expected_bounding_box):
+    bounding_box = get_bounding_box(voronoi=mock_voronoi, mask=mask)
+
+    assert bounding_box == expected_bounding_box

@@ -17,32 +17,6 @@ def mock_points():
 
 
 @pytest.fixture
-def mock_points_as_features():
-    return [
-        {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {"type": "Point", "coordinates": [0, 0]},
-        },
-        {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {"type": "Point", "coordinates": [1, 1]},
-        },
-        {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {"type": "Point", "coordinates": [2, 3]},
-        },
-        {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {"type": "Point", "coordinates": [1, 2]},
-        },
-    ]
-
-
-@pytest.fixture
 def mock_voronoi(mock_points):
     points = np.array(mock_points)
     return Voronoi(points)
@@ -142,7 +116,7 @@ def mock_geo_dataframe():
 
 
 @pytest.fixture
-def mock_mask():
+def mock_mask_multipolygon():
     return MultiPolygon([Polygon([(1, 1), (3, 1), (3, 3), (1, 3)])])
 
 
@@ -161,12 +135,59 @@ def mock_geojson_data():
                 "type": "Feature",
                 "properties": {
                     "name": "Bushy parkrun",
+                },
+                "geometry": {"type": "Point", "coordinates": [-0.5, 51.4, 0]},
+            },
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
+                },
+                "geometry": {"type": "Point", "coordinates": [-1, 50.4, 0]},
+            },
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
+                },
+                "geometry": {"type": "Point", "coordinates": [0.3, 53.4, 0]},
+            },
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
+                },
+                "geometry": {"type": "Point", "coordinates": [-0.8, 52.4, 0]},
+            },
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
+                },
+                "geometry": {"type": "Point", "coordinates": [2.3, 50.9, 0]},
+            },
+        ],
+    }
+
+
+@pytest.fixture
+def mock_geojson_mask_data():
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": "Bushy parkrun",
                     "description": "",
                     "styleUrl": "#icon-1739-0F9D58",
                     "Location": "Bushy Park, Teddington",
                     "Permit": "Y",
                 },
-                "geometry": {"type": "Point", "coordinates": [-0.335791, 51.410992, 0]},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[1, 1], [3, 1], [3, 3], [1, 3]]],
+                },
             }
         ],
     }
@@ -175,7 +196,16 @@ def mock_geojson_data():
 @pytest.fixture
 def mock_saved_geojson_file_path(temp_directory, mock_geojson_data):
     file_path = os.path.join(temp_directory, "sample_geojson_data.geojson")
-    with open(file_path) as f:
+    with open(file_path, "+w") as f:
         f.write(json.dumps(mock_geojson_data))
 
-    return file_path
+    yield file_path
+
+
+@pytest.fixture
+def mock_saved_geojson_mask_file_path(temp_directory, mock_geojson_mask_data):
+    file_path = os.path.join(temp_directory, "sample_geojson_mask_data.geojson")
+    with open(file_path, "+w") as f:
+        f.write(json.dumps(mock_geojson_mask_data))
+
+    yield file_path

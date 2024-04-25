@@ -149,8 +149,8 @@ def test_get_bounding_segments(mock_bounding_box, mock_bounding_box_intersection
     assert all(segment in expected_bounding_segments for segment in bounding_segments)
 
 
-def test_clip_polygons_within_mask(mock_geo_dataframe, mock_mask):
-    clipped = clip_polygons_to_mask(mock_geo_dataframe, mock_mask)
+def test_clip_polygons_within_mask(mock_geo_dataframe, mock_mask_multipolygon):
+    clipped = clip_polygons_to_mask(mock_geo_dataframe, mock_mask_multipolygon)
     assert len(clipped) == 1
     assert clipped.geometry.iloc[0].equals(Polygon([(1, 1), (2, 1), (2, 2), (1, 2)]))
 

@@ -6,7 +6,7 @@ from shapely.geometry import shape
 from shapely.ops import unary_union
 
 
-def _load_geojson_file(geojson_path: str):
+def _load_geojson_file(geojson_path: str | Path):
     # TODO: extend to yaml
     with open(geojson_path, "r", encoding="utf-8") as f:
         points_geojson_obj = json.load(f)
