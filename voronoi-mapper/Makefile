@@ -13,5 +13,5 @@ lint:
 	poetry run isort .
 
 test:
-	poetry run pytest . --cov --cov-report term-missing
+	poetry run pytest . --cov --cov-fail-under=100 --cov-report term-missing
 
